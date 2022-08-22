@@ -36,18 +36,16 @@ type GpioResponse struct {
 	State bool
 }
 
-// TODO : read ds18b20 temp (through sysfs) one wire
-
 func (c *Config) serve() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write(rootHTML); err != nil {
-			panic(err)
+			log.Panicf("%v\n", err)
 		}
 	})
 	http.HandleFunc("/gpio", func(w http.ResponseWriter, r *http.Request) {
 		bb, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Println(err)
+			log.Printf("%v\n", err)
 			return
 		}
 		g := GpioRequest{}
@@ -99,11 +97,9 @@ func (c *Config) serve() {
 				log.Printf("%v\n", wErr)
 			}
 		}
-
 	})
 	http.HandleFunc("/temp", func(w http.ResponseWriter, r *http.Request) {
 		// TODO : return temp data from ds18b20's or dht22
-
 	})
 	log.Printf("Starting server on port %d", c.Port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", c.Port), nil); err != nil {
@@ -118,29 +114,29 @@ func init() {
 }
 
 func (c *Config) addPin(pin int, label string) {
-	fmt.Printf("adding pin %d as %s\n", pin, label)
+	log.Printf("adding pin %d as %s\n", pin, label)
 	c.Pins[label] = pin
 }
 
 func (c *Config) saveConfig(configFilename string) {
 	mj, err := c.marshalJson()
 	if err != nil {
+		log.Panicf("%v\n", err)
 		return
 	}
 	if wErr := os.WriteFile(configFilename, mj, 0666); err != nil {
-		log.Printf("%v\n", wErr)
+		log.Panicf("%v\n", wErr)
 	}
-
 }
 
 func (c *Config) loadConfig(configFilename string) {
 	fr, err := os.ReadFile(configFilename)
 	if err != nil {
-		log.Printf("%v\n", err)
+		log.Panicf("%v\n", err)
 		return
 	}
 	if jErr := json.Unmarshal(fr, c); jErr != nil {
-		log.Printf("%v\n", jErr)
+		log.Panicf("%v\n", jErr)
 		return
 	}
 	fmt.Printf("loading config file: %s", configFilename)
